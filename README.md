@@ -23,7 +23,7 @@ import bab_datasets as nod
 train_val = nod.load_experiment("multisine_05", preprocess=True, plot=True)
 
 # Unpack
-u, y = train_val
+u, y = train_val  # y is the raw signal; yf (if present) is available as data.y_filt
 print(train_val)
 
 # Slice
@@ -36,6 +36,7 @@ print(train_val[:100])
 - If a file is missing, it attempts to download from the configured URL.
 - For manual trimming, use `plot=True` and set `end_idx` after visually checking the zoomed plot.
 - You can change the zoom window with `zoom_last_n`.
+- If present, `ref` is exposed as `data.y_ref` and `yf` is exposed as `data.y_filt` (not used for modeling by default).
 
 ## Datasets
 

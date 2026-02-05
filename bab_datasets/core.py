@@ -66,6 +66,9 @@ class InputOutputData:
     u: np.ndarray
     y: np.ndarray
     sampling_time: float
+    y_ref: Optional[np.ndarray] = None
+    y_raw: Optional[np.ndarray] = None
+    y_filt: Optional[np.ndarray] = None
     state_initialization_window_length: Optional[int] = None
 
     def __iter__(self):
@@ -78,6 +81,9 @@ class InputOutputData:
             u=self.u[item],
             y=self.y[item],
             sampling_time=self.sampling_time,
+            y_ref=None if self.y_ref is None else self.y_ref[item],
+            y_raw=None if self.y_raw is None else self.y_raw[item],
+            y_filt=None if self.y_filt is None else self.y_filt[item],
             state_initialization_window_length=self.state_initialization_window_length,
         )
 
@@ -86,6 +92,8 @@ class InputOutputData:
             f"InputOutputData \"{self.name}\" u.shape={self.u.shape} y.shape={self.y.shape}\n"
             f"sampling_time={self.sampling_time:.6e}"
         )
+        if self.y_ref is not None:
+            base += f" y_ref.shape={self.y_ref.shape}"
         if self.state_initialization_window_length is not None:
             base += f" state_initialization_window_length={self.state_initialization_window_length}"
         return base
@@ -121,13 +129,15 @@ def _download_if_needed(url: str, filename: str, data_dir: str) -> str:
     return path
 
 
-def _load_mat(path: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def _load_mat(path: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
     data = scipy.io.loadmat(path)
     t = data["time"].flatten()
     u = data["u"].flatten()
     y = data["y"].flatten()
     trig = data["trigger"].flatten()
-    return t, u, y, trig
+    y_filt = data["yf"].flatten() if "yf" in data else None
+    y_ref = data["ref"].flatten() if "ref" in data else None
+    return t, u, y, trig, y_filt, y_ref
 
 
 def _find_trigger_start(trig: np.ndarray) -> int:
@@ -205,7 +215,7 @@ def load_experiment(
     data_dir = data_dir or _default_data_dir()
     path = _download_if_needed(entry["url"], entry["filename"], data_dir)
 
-    t, u, y, trig = _load_mat(path)
+    t, u, y, trig, y_filt, y_ref = _load_mat(path)
 
     if plot:
         _plot_signals(t, u, y, trig, entry["filename"])
@@ -213,7 +223,16 @@ def load_experiment(
     ts = float(np.average(np.diff(t)))
 
     if not preprocess:
-        return InputOutputData(name=name, u=u, y=y, sampling_time=ts)
+        y_out = y
+        return InputOutputData(
+            name=name,
+            u=u,
+            y=y_out,
+            sampling_time=ts,
+            y_ref=y_ref,
+            y_raw=y,
+            y_filt=y_filt,
+        )
 
     start_idx = _find_trigger_start(trig)
 
@@ -224,12 +243,20 @@ def load_experiment(
 
     u = u[start_idx:end_idx]
     y = y[start_idx:end_idx]
+    if y_filt is not None:
+        y_filt = y_filt[start_idx:end_idx]
+    if y_ref is not None:
+        y_ref = y_ref[start_idx:end_idx]
     t = t[start_idx:end_idx] - t[start_idx]
 
     if resample_factor and resample_factor > 1:
         u = u[::resample_factor]
         y = y[::resample_factor]
         t = t[::resample_factor]
+        if y_filt is not None:
+            y_filt = y_filt[::resample_factor]
+        if y_ref is not None:
+            y_ref = y_ref[::resample_factor]
         ts = float(np.average(np.diff(t)))
 
     if plot:
@@ -242,11 +269,23 @@ def load_experiment(
         plt.show()
 
         plt.figure(figsize=(10, 4))
-        plt.plot(t, y)
-        plt.title("Resampled y")
+        plt.plot(t, y, label="y")
+        if y_ref is not None:
+            plt.plot(t, y_ref, label="y_ref")
+        plt.title("Resampled y (and y_ref if available)")
         plt.ylabel("Value")
+        plt.legend(loc="upper right")
         plt.grid(True)
         plt.tight_layout()
         plt.show()
 
-    return InputOutputData(name=name, u=u, y=y, sampling_time=ts)
+    y_out = y
+    return InputOutputData(
+        name=name,
+        u=u,
+        y=y_out,
+        sampling_time=ts,
+        y_ref=y_ref,
+        y_raw=y,
+        y_filt=y_filt,
+    )
