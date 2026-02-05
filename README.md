@@ -20,7 +20,13 @@ pip install git+https://github.com/helonayala/bab_datasets.git
 import bab_datasets as nod
 
 # Load with preprocessing
-    train_val = nod.load_experiment("multisine_05", preprocess=True, plot=True, end_ref_tolerance=1e-8)
+train_val = nod.load_experiment(
+    "multisine_05",
+    preprocess=True,
+    plot=True,
+    end_ref_tolerance=1e-8,
+    y_dot_method="savgol",
+)
 
 # Unpack
 u, y, y_ref, y_dot = train_val  # y is raw; y_ref is reference; y_dot from Savitzky-Golay

@@ -4,7 +4,8 @@ from typing import Dict, Tuple, Optional
 
 import numpy as np
 import scipy.io
-from scipy.signal import savgol_filter
+from scipy.signal import savgol_filter, butter, filtfilt
+from scipy.interpolate import UnivariateSpline
 import matplotlib.pyplot as plt
 from urllib.request import urlretrieve
 from urllib.error import URLError
@@ -252,6 +253,9 @@ def _estimate_y_dot(
     method: str = "savgol",
     savgol_window: int = 51,
     savgol_poly: int = 3,
+    spline_s: float = 0.0,
+    butter_cutoff_hz: float = 5.0,
+    butter_order: int = 4,
 ):
     if method == "savgol":
         w = max(5, int(savgol_window))
@@ -260,6 +264,24 @@ def _estimate_y_dot(
         return savgol_filter(y, window_length=w, polyorder=savgol_poly, deriv=1, delta=ts, mode="interp")
     if method == "central":
         return np.gradient(y, ts)
+    if method == "spline":
+        t = np.arange(len(y)) * ts
+        spl = UnivariateSpline(t, y, s=spline_s)
+        return spl.derivative()(t)
+    if method == "butter":
+        nyq = 0.5 / ts
+        cutoff = min(max(butter_cutoff_hz, 1e-6), nyq * 0.99)
+        b, a = butter(butter_order, cutoff / nyq, btype="low")
+        y_smooth = filtfilt(b, a, y)
+        return np.gradient(y_smooth, ts)
+    if method == "tvreg":
+        try:
+            from tvregdiff import TVRegDiff
+        except Exception as exc:
+            raise ValueError(
+                "tvreg method requires 'tvregdiff' package. Install it or choose another method."
+            ) from exc
+        return TVRegDiff(y, 1.0 / ts, 1e-2, itern=200)
     raise ValueError(f"Unknown y_dot method '{method}'.")
 
 
@@ -274,6 +296,9 @@ def load_experiment(
     y_dot_method: str = "savgol",
     savgol_window: int = 51,
     savgol_poly: int = 3,
+    spline_s: float = 0.0,
+    butter_cutoff_hz: float = 5.0,
+    butter_order: int = 4,
     data_dir: Optional[str] = None,
 ) -> InputOutputData:
     """
@@ -300,10 +325,28 @@ def load_experiment(
     trig_full = trig
 
     ts = float(np.average(np.diff(t)))
-    y_dot_full = _estimate_y_dot(y_full, ts, method=y_dot_method, savgol_window=savgol_window, savgol_poly=savgol_poly)
+    y_dot_full = _estimate_y_dot(
+        y_full,
+        ts,
+        method=y_dot_method,
+        savgol_window=savgol_window,
+        savgol_poly=savgol_poly,
+        spline_s=spline_s,
+        butter_cutoff_hz=butter_cutoff_hz,
+        butter_order=butter_order,
+    )
 
     if not preprocess:
-        y_dot = _estimate_y_dot(y, ts, method=y_dot_method, savgol_window=savgol_window, savgol_poly=savgol_poly)
+        y_dot = _estimate_y_dot(
+            y,
+            ts,
+            method=y_dot_method,
+            savgol_window=savgol_window,
+            savgol_poly=savgol_poly,
+            spline_s=spline_s,
+            butter_cutoff_hz=butter_cutoff_hz,
+            butter_order=butter_order,
+        )
         y_out = y
         return InputOutputData(
             name=name,
@@ -351,7 +394,16 @@ def load_experiment(
         trig_proc = trig_proc[start_idx:end_idx][::resample_factor]
         ts = float(np.average(np.diff(t)))
 
-    y_dot = _estimate_y_dot(y, ts, method=y_dot_method, savgol_window=savgol_window, savgol_poly=savgol_poly)
+    y_dot = _estimate_y_dot(
+        y,
+        ts,
+        method=y_dot_method,
+        savgol_window=savgol_window,
+        savgol_poly=savgol_poly,
+        spline_s=spline_s,
+        butter_cutoff_hz=butter_cutoff_hz,
+        butter_order=butter_order,
+    )
 
     if plot:
         # Resampled plots (u, y+y_ref, velocity)
