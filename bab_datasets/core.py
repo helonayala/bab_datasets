@@ -205,17 +205,17 @@ def _plot_zoom_windows(
     plt.show()
 
 
-def _plot_signals(t, u, y, y_ref, trig, trig_proc, title: str):
+def _plot_signals(t, u, y, y_ref, trig_raw, trig_proc, title: str):
     plt.figure(figsize=(10, 6))
 
-    plt.subplot(4, 1, 1)
+    plt.subplot(3, 1, 1)
     plt.plot(t, u, color="blue", label="Input (u)")
     plt.ylabel("Input")
     plt.legend(loc="upper right")
     plt.grid(True)
     plt.title(f"Data: {title}")
 
-    plt.subplot(4, 1, 2)
+    plt.subplot(3, 1, 2)
     plt.plot(t, y, color="red", label="Output (y)")
     if y_ref is not None:
         plt.plot(t, y_ref, color="gray", alpha=0.7, label="Reference (y_ref)")
@@ -224,18 +224,14 @@ def _plot_signals(t, u, y, y_ref, trig, trig_proc, title: str):
     plt.legend(loc="upper right")
     plt.grid(True)
 
-    plt.subplot(4, 1, 3)
-    plt.plot(t, trig, color="black", label="Trigger")
-    plt.ylabel("Trigger")
-    plt.xlabel("Time (s)")
-    plt.legend(loc="upper right")
-    plt.grid(True)
-
-    plt.subplot(4, 1, 4)
+    plt.subplot(3, 1, 3)
+    if trig_raw is None:
+        trig_raw = np.zeros_like(t)
+    plt.plot(t, trig_raw, color="black", label="Trigger (raw)")
     if trig_proc is None:
-        trig_proc = np.zeros_like(trig)
-    plt.plot(t, trig_proc, color="purple", label="Trigger (processed)")
-    plt.ylabel("Trigger (proc)")
+        trig_proc = np.zeros_like(t)
+    plt.plot(t, trig_proc, color="purple", alpha=0.7, label="Trigger (processed)")
+    plt.ylabel("Trigger")
     plt.xlabel("Time (s)")
     plt.legend(loc="upper right")
     plt.grid(True)
@@ -275,6 +271,7 @@ def load_experiment(
     u_full = u
     y_full = y
     y_ref_full = y_ref
+    trig_full = trig
 
     ts = float(np.average(np.diff(t)))
 
@@ -303,7 +300,7 @@ def load_experiment(
     trig_proc[start_idx:end_idx] = 1.0
 
     if plot:
-        _plot_signals(t_full, u_full, y_full, y_ref_full, trig_proc, trig_proc, entry["filename"])
+        _plot_signals(t_full, u_full, y_full, y_ref_full, trig_full, trig_proc, entry["filename"])
         _plot_zoom_windows(y_full, y_ref_full, trig_proc, start_idx, end_idx, n_samples=zoom_last_n)
 
     u = u[start_idx:end_idx]
