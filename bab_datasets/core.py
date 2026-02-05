@@ -208,7 +208,7 @@ def _plot_zoom_windows(
 def _plot_signals(t, u, y, y_ref, trig, trig_proc, title: str):
     plt.figure(figsize=(10, 6))
 
-    plt.subplot(3, 1, 1)
+    plt.subplot(4, 1, 1)
     plt.plot(t, u, color="blue", label="Input (u)")
     plt.ylabel("Input")
     plt.legend(loc="upper right")
@@ -271,6 +271,10 @@ def load_experiment(
     path = _download_if_needed(entry["url"], entry["filename"], data_dir)
 
     t, u, y, trig, y_filt, y_ref = _load_mat(path)
+    t_full = t
+    u_full = u
+    y_full = y
+    y_ref_full = y_ref
 
     ts = float(np.average(np.diff(t)))
 
@@ -298,12 +302,9 @@ def load_experiment(
     trig_proc = np.zeros_like(trig)
     trig_proc[start_idx:end_idx] = 1.0
 
-    # overwrite trigger with processed trigger for clarity downstream
-    trig = trig_proc
-
     if plot:
-        _plot_signals(t, u, y, y_ref, trig, trig_proc, entry["filename"])
-        _plot_zoom_windows(y, y_ref, trig_proc, start_idx, end_idx, n_samples=zoom_last_n)
+        _plot_signals(t_full, u_full, y_full, y_ref_full, trig_proc, trig_proc, entry["filename"])
+        _plot_zoom_windows(y_full, y_ref_full, trig_proc, start_idx, end_idx, n_samples=zoom_last_n)
 
     u = u[start_idx:end_idx]
     y = y[start_idx:end_idx]
