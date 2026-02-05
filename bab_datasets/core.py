@@ -74,6 +74,7 @@ class InputOutputData:
     def __iter__(self):
         yield self.u
         yield self.y
+        yield self.y_ref
 
     def __getitem__(self, item):
         return InputOutputData(

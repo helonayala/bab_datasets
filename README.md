@@ -23,7 +23,7 @@ import bab_datasets as nod
 train_val = nod.load_experiment("multisine_05", preprocess=True, plot=True)
 
 # Unpack
-u, y = train_val  # y is the raw signal; yf (if present) is available as data.y_filt
+u, y, y_ref = train_val  # y is raw; y_ref is reference
 print(train_val)
 
 # Slice
