@@ -164,7 +164,6 @@ def _find_end_before_ref_zero(y_ref: np.ndarray, tolerance: float = 1e-8) -> int
 
 def _plot_zoom_windows(
     y: np.ndarray,
-    y_ref: Optional[np.ndarray],
     trig_proc: Optional[np.ndarray],
     start_idx: int,
     end_idx: int,
@@ -179,8 +178,6 @@ def _plot_zoom_windows(
 
     plt.figure(figsize=(10, 4))
     plt.plot(np.arange(s0, s1), y[s0:s1], color="red", label="y")
-    if y_ref is not None:
-        plt.plot(np.arange(s0, s1), y_ref[s0:s1], color="gray", alpha=0.7, label="y_ref")
     if trig_proc is not None:
         plt.plot(np.arange(s0, s1), trig_proc[s0:s1], color="black", alpha=0.6, label="trigger_proc")
     plt.title(f"Zoom near start (samples {s0}:{s1})")
@@ -196,8 +193,6 @@ def _plot_zoom_windows(
     e2 = len(y)
     plt.figure(figsize=(10, 4))
     plt.plot(np.arange(e1, e2), y[e1:e2], color="red", label="y")
-    if y_ref is not None:
-        plt.plot(np.arange(e1, e2), y_ref[e1:e2], color="gray", alpha=0.7, label="y_ref")
     if trig_proc is not None:
         plt.plot(np.arange(e1, e2), trig_proc[e1:e2], color="black", alpha=0.6, label="trigger_proc")
     plt.title(f"Zoom near end (samples {e1}:{e2})")
@@ -209,17 +204,17 @@ def _plot_zoom_windows(
     plt.show()
 
 
-def _plot_signals(t, u, y, y_ref, trig_raw, trig_proc, title: str):
-    plt.figure(figsize=(10, 6))
+def _plot_signals(t, u, y, y_ref, y_dot, trig_raw, trig_proc, title: str):
+    plt.figure(figsize=(10, 8))
 
-    plt.subplot(3, 1, 1)
+    plt.subplot(4, 1, 1)
     plt.plot(t, u, color="blue", label="Input (u)")
     plt.ylabel("Input")
     plt.legend(loc="upper right")
     plt.grid(True)
     plt.title(f"Data: {title}")
 
-    plt.subplot(3, 1, 2)
+    plt.subplot(4, 1, 2)
     plt.plot(t, y, color="red", label="Output (y)")
     if y_ref is not None:
         plt.plot(t, y_ref, color="gray", alpha=0.7, label="Reference (y_ref)")
@@ -228,7 +223,7 @@ def _plot_signals(t, u, y, y_ref, trig_raw, trig_proc, title: str):
     plt.legend(loc="upper right")
     plt.grid(True)
 
-    plt.subplot(3, 1, 3)
+    plt.subplot(4, 1, 3)
     if trig_raw is None:
         trig_raw = np.zeros_like(t)
     plt.plot(t, trig_raw, color="black", label="Trigger (raw)")
@@ -236,6 +231,13 @@ def _plot_signals(t, u, y, y_ref, trig_raw, trig_proc, title: str):
         trig_proc = np.zeros_like(t)
     plt.plot(t, trig_proc, color="purple", alpha=0.7, label="Trigger (processed)")
     plt.ylabel("Trigger")
+    plt.xlabel("Time (s)")
+    plt.legend(loc="upper right")
+    plt.grid(True)
+
+    plt.subplot(4, 1, 4)
+    plt.plot(t, y_dot, color="tab:green", label="Velocity (y_dot)")
+    plt.ylabel("Velocity")
     plt.xlabel("Time (s)")
     plt.legend(loc="upper right")
     plt.grid(True)
@@ -327,8 +329,8 @@ def load_experiment(
     trig_proc[start_idx:end_idx] = 1.0
 
     if plot:
-        _plot_signals(t_full, u_full, y_full, y_ref_full, trig_full, trig_proc, entry["filename"])
-        _plot_zoom_windows(y_full, y_ref_full, trig_proc, start_idx, end_idx, n_samples=zoom_last_n)
+        _plot_signals(t_full, u_full, y_full, y_ref_full, y_dot_full, trig_full, trig_proc, entry["filename"])
+        _plot_zoom_windows(y_full, trig_proc, start_idx, end_idx, n_samples=zoom_last_n)
 
     u = u[start_idx:end_idx]
     y = y[start_idx:end_idx]
@@ -352,33 +354,29 @@ def load_experiment(
     y_dot = _estimate_y_dot(y, ts, method=y_dot_method, savgol_window=savgol_window, savgol_poly=savgol_poly)
 
     if plot:
-        # Raw plots (include velocity)
-        plt.figure(figsize=(10, 4))
-        plt.plot(t_full, u_full, label="u (raw)")
-        plt.plot(t_full, y_full, label="y (raw)")
-        if y_ref_full is not None:
-            plt.plot(t_full, y_ref_full, label="y_ref (raw)")
-        plt.plot(t_full, y_dot_full, label="y_dot (raw)")
-        plt.title("Raw signals (including velocity)")
-        plt.ylabel("Value")
-        plt.xlabel("Time (s)")
+        # Resampled plots (u, y+y_ref, velocity)
+        plt.figure(figsize=(10, 6))
+        plt.subplot(3, 1, 1)
+        plt.plot(t, u, label="u (resampled)")
+        plt.ylabel("Input")
         plt.legend(loc="upper right")
         plt.grid(True)
-        plt.tight_layout()
-        plt.show()
 
-        # Resampled plots (include velocity)
-        plt.figure(figsize=(10, 4))
-        plt.plot(t, u, label="u (resampled)")
+        plt.subplot(3, 1, 2)
         plt.plot(t, y, label="y (resampled)")
         if y_ref is not None:
             plt.plot(t, y_ref, label="y_ref (resampled)")
+        plt.ylabel("Output")
+        plt.legend(loc="upper right")
+        plt.grid(True)
+
+        plt.subplot(3, 1, 3)
         plt.plot(t, y_dot, label="y_dot (resampled)")
-        plt.title("Resampled signals (including velocity)")
-        plt.ylabel("Value")
+        plt.ylabel("Velocity")
         plt.xlabel("Time (s)")
         plt.legend(loc="upper right")
         plt.grid(True)
+
         plt.tight_layout()
         plt.show()
 
