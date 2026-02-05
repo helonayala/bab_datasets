@@ -329,15 +329,6 @@ def load_experiment(
     if plot:
         _plot_signals(t_full, u_full, y_full, y_ref_full, trig_full, trig_proc, entry["filename"])
         _plot_zoom_windows(y_full, y_ref_full, trig_proc, start_idx, end_idx, n_samples=zoom_last_n)
-        plt.figure(figsize=(10, 4))
-        plt.plot(t_full, y_dot_full, label="y_dot (raw)")
-        plt.title("Velocity estimate (raw)")
-        plt.xlabel("Time (s)")
-        plt.ylabel("y_dot")
-        plt.legend(loc="upper right")
-        plt.grid(True)
-        plt.tight_layout()
-        plt.show()
 
     u = u[start_idx:end_idx]
     y = y[start_idx:end_idx]
@@ -358,37 +349,39 @@ def load_experiment(
         trig_proc = trig_proc[start_idx:end_idx][::resample_factor]
         ts = float(np.average(np.diff(t)))
 
+    y_dot = _estimate_y_dot(y, ts, method=y_dot_method, savgol_window=savgol_window, savgol_poly=savgol_poly)
+
     if plot:
+        # Raw plots (include velocity)
         plt.figure(figsize=(10, 4))
-        plt.plot(t, u)
-        plt.title("Resampled u")
+        plt.plot(t_full, u_full, label="u (raw)")
+        plt.plot(t_full, y_full, label="y (raw)")
+        if y_ref_full is not None:
+            plt.plot(t_full, y_ref_full, label="y_ref (raw)")
+        plt.plot(t_full, y_dot_full, label="y_dot (raw)")
+        plt.title("Raw signals (including velocity)")
         plt.ylabel("Value")
-        plt.grid(True)
-        plt.tight_layout()
-        plt.show()
-
-        plt.figure(figsize=(10, 4))
-        plt.plot(t, y, label="y")
-        if y_ref is not None:
-            plt.plot(t, y_ref, label="y_ref")
-        plt.title("Resampled y (and y_ref if available)")
-        plt.ylabel("Value")
-        plt.legend(loc="upper right")
-        plt.grid(True)
-        plt.tight_layout()
-        plt.show()
-
-        plt.figure(figsize=(10, 4))
-        plt.plot(t, y_dot, label="y_dot (resampled)")
-        plt.title("Velocity estimate (resampled)")
-        plt.ylabel("y_dot")
         plt.xlabel("Time (s)")
         plt.legend(loc="upper right")
         plt.grid(True)
         plt.tight_layout()
         plt.show()
 
-    y_dot = _estimate_y_dot(y, ts, method=y_dot_method, savgol_window=savgol_window, savgol_poly=savgol_poly)
+        # Resampled plots (include velocity)
+        plt.figure(figsize=(10, 4))
+        plt.plot(t, u, label="u (resampled)")
+        plt.plot(t, y, label="y (resampled)")
+        if y_ref is not None:
+            plt.plot(t, y_ref, label="y_ref (resampled)")
+        plt.plot(t, y_dot, label="y_dot (resampled)")
+        plt.title("Resampled signals (including velocity)")
+        plt.ylabel("Value")
+        plt.xlabel("Time (s)")
+        plt.legend(loc="upper right")
+        plt.grid(True)
+        plt.tight_layout()
+        plt.show()
+
     y_out = y
     return InputOutputData(
         name=name,
