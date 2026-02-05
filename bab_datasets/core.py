@@ -148,12 +148,12 @@ def _find_trigger_start(trig: np.ndarray) -> int:
     return int(idx[0])
 
 
-def _find_end_before_ref_zero(y_ref: np.ndarray) -> int:
+def _find_end_before_ref_zero(y_ref: np.ndarray, tolerance: float = 1e-8) -> int:
     if y_ref is None:
         return -1
-    # Scan from the end until we find a nonzero reference
+    # Scan from the end until we find a nonzero reference (with tolerance)
     for i in range(len(y_ref) - 1, -1, -1):
-        if np.abs(y_ref[i]) > 0:
+        if np.abs(y_ref[i]) > tolerance:
             return int(i + 1)
     return -1
 
