@@ -23,7 +23,7 @@ import bab_datasets as nod
     train_val = nod.load_experiment("multisine_05", preprocess=True, plot=True, end_ref_tolerance=1e-8)
 
 # Unpack
-u, y, y_ref = train_val  # y is raw; y_ref is reference
+u, y, y_ref, y_dot = train_val  # y is raw; y_ref is reference; y_dot from Savitzky-Golay
 print(train_val)
 
 # Slice

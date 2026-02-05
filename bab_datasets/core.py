@@ -4,6 +4,7 @@ from typing import Dict, Tuple, Optional
 
 import numpy as np
 import scipy.io
+from scipy.signal import savgol_filter
 import matplotlib.pyplot as plt
 from urllib.request import urlretrieve
 from urllib.error import URLError
@@ -69,12 +70,14 @@ class InputOutputData:
     y_ref: Optional[np.ndarray] = None
     y_raw: Optional[np.ndarray] = None
     y_filt: Optional[np.ndarray] = None
+    y_dot: Optional[np.ndarray] = None
     state_initialization_window_length: Optional[int] = None
 
     def __iter__(self):
         yield self.u
         yield self.y
         yield self.y_ref
+        yield self.y_dot
 
     def __getitem__(self, item):
         return InputOutputData(
@@ -85,6 +88,7 @@ class InputOutputData:
             y_ref=None if self.y_ref is None else self.y_ref[item],
             y_raw=None if self.y_raw is None else self.y_raw[item],
             y_filt=None if self.y_filt is None else self.y_filt[item],
+            y_dot=None if self.y_dot is None else self.y_dot[item],
             state_initialization_window_length=self.state_initialization_window_length,
         )
 
@@ -187,9 +191,9 @@ def _plot_zoom_windows(
     plt.tight_layout()
     plt.show()
 
-    # Window near end
-    e1 = max(0, end_idx - n_samples)
-    e2 = min(len(y), end_idx)
+    # Window at the very end of the full signal
+    e1 = max(0, len(y) - n_samples)
+    e2 = len(y)
     plt.figure(figsize=(10, 4))
     plt.plot(np.arange(e1, e2), y[e1:e2], color="red", label="y")
     if y_ref is not None:
@@ -240,6 +244,23 @@ def _plot_signals(t, u, y, y_ref, trig_raw, trig_proc, title: str):
     plt.show()
 
 
+def _estimate_y_dot(
+    y: np.ndarray,
+    ts: float,
+    method: str = "savgol",
+    savgol_window: int = 51,
+    savgol_poly: int = 3,
+):
+    if method == "savgol":
+        w = max(5, int(savgol_window))
+        if w % 2 == 0:
+            w += 1
+        return savgol_filter(y, window_length=w, polyorder=savgol_poly, deriv=1, delta=ts, mode="interp")
+    if method == "central":
+        return np.gradient(y, ts)
+    raise ValueError(f"Unknown y_dot method '{method}'.")
+
+
 def load_experiment(
     name: str,
     preprocess: bool = True,
@@ -248,6 +269,9 @@ def load_experiment(
     resample_factor: int = 50,
     zoom_last_n: int = 200,
     end_ref_tolerance: float = 1e-8,
+    y_dot_method: str = "savgol",
+    savgol_window: int = 51,
+    savgol_poly: int = 3,
     data_dir: Optional[str] = None,
 ) -> InputOutputData:
     """
@@ -276,6 +300,7 @@ def load_experiment(
     ts = float(np.average(np.diff(t)))
 
     if not preprocess:
+        y_dot = _estimate_y_dot(y, ts, method=y_dot_method, savgol_window=savgol_window, savgol_poly=savgol_poly)
         y_out = y
         return InputOutputData(
             name=name,
@@ -285,6 +310,7 @@ def load_experiment(
             y_ref=y_ref,
             y_raw=y,
             y_filt=y_filt,
+            y_dot=y_dot,
         )
 
     start_idx = _find_trigger_start(trig)
@@ -342,6 +368,7 @@ def load_experiment(
         plt.tight_layout()
         plt.show()
 
+    y_dot = _estimate_y_dot(y, ts, method=y_dot_method, savgol_window=savgol_window, savgol_poly=savgol_poly)
     y_out = y
     return InputOutputData(
         name=name,
@@ -351,4 +378,5 @@ def load_experiment(
         y_ref=y_ref,
         y_raw=y,
         y_filt=y_filt,
+        y_dot=y_dot,
     )
