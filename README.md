@@ -34,8 +34,9 @@ print(train_val[:100])
 
 - The loader prefers local files under `data/` in this repo.
 - If a file is missing, it attempts to download from the configured URL.
-- For manual trimming, use `plot=True` and set `end_idx` after visually checking the zoomed plot.
-- You can change the zoom window with `zoom_last_n`.
+- The end index defaults to the sample right before `y_ref` goes to zero.
+- For manual trimming, use `plot=True` and set `end_idx` after visually checking the zoomed plots.
+- You can change the zoom window size with `zoom_last_n` (default: 200).
 - If present, `ref` is exposed as `data.y_ref` and `yf` is exposed as `data.y_filt` (not used for modeling by default).
 
 ## Datasets

@@ -148,24 +148,63 @@ def _find_trigger_start(trig: np.ndarray) -> int:
     return int(idx[0])
 
 
-def _plot_end_zoom(y: np.ndarray, y_ref: Optional[np.ndarray], n_last: int = 2000):
-    n_last = int(max(100, n_last))
-    start = max(0, len(y) - n_last)
+def _find_end_before_ref_zero(y_ref: np.ndarray) -> int:
+    if y_ref is None:
+        return -1
+    nz = np.where(np.abs(y_ref) > 0)[0]
+    if nz.size == 0:
+        return -1
+    return int(nz[-1] + 1)
+
+
+def _plot_zoom_windows(
+    y: np.ndarray,
+    y_ref: Optional[np.ndarray],
+    trig_proc: Optional[np.ndarray],
+    start_idx: int,
+    end_idx: int,
+    n_samples: int = 200,
+):
+    n_samples = int(max(50, n_samples))
+
+    # Window around start (start in the middle)
+    half = n_samples // 2
+    s0 = max(0, start_idx - half)
+    s1 = min(len(y), s0 + n_samples)
+
     plt.figure(figsize=(10, 4))
-    plt.plot(y, color="red", label="Output (y)")
+    plt.plot(np.arange(s0, s1), y[s0:s1], color="red", label="y")
     if y_ref is not None:
-        plt.plot(y_ref, color="gray", alpha=0.7, label="Reference (y_ref)")
-    plt.xlim([start, len(y)])
-    plt.title(f"Zoom on last {n_last} samples (select end index)")
+        plt.plot(np.arange(s0, s1), y_ref[s0:s1], color="gray", alpha=0.7, label="y_ref")
+    if trig_proc is not None:
+        plt.plot(np.arange(s0, s1), trig_proc[s0:s1], color="black", alpha=0.6, label="trigger_proc")
+    plt.title(f"Zoom near start (samples {s0}:{s1})")
     plt.xlabel("Sample")
-    plt.ylabel("Output")
+    plt.ylabel("Signal")
+    plt.grid(True)
+    plt.legend(loc="upper right")
+    plt.tight_layout()
+    plt.show()
+
+    # Window near end
+    e1 = max(0, end_idx - n_samples)
+    e2 = min(len(y), end_idx)
+    plt.figure(figsize=(10, 4))
+    plt.plot(np.arange(e1, e2), y[e1:e2], color="red", label="y")
+    if y_ref is not None:
+        plt.plot(np.arange(e1, e2), y_ref[e1:e2], color="gray", alpha=0.7, label="y_ref")
+    if trig_proc is not None:
+        plt.plot(np.arange(e1, e2), trig_proc[e1:e2], color="black", alpha=0.6, label="trigger_proc")
+    plt.title(f"Zoom near end (samples {e1}:{e2})")
+    plt.xlabel("Sample")
+    plt.ylabel("Signal")
     plt.grid(True)
     plt.legend(loc="upper right")
     plt.tight_layout()
     plt.show()
 
 
-def _plot_signals(t, u, y, y_ref, trig, title: str):
+def _plot_signals(t, u, y, y_ref, trig, trig_proc, title: str):
     plt.figure(figsize=(10, 6))
 
     plt.subplot(3, 1, 1)
@@ -175,7 +214,7 @@ def _plot_signals(t, u, y, y_ref, trig, title: str):
     plt.grid(True)
     plt.title(f"Data: {title}")
 
-    plt.subplot(3, 1, 2)
+    plt.subplot(4, 1, 2)
     plt.plot(t, y, color="red", label="Output (y)")
     if y_ref is not None:
         plt.plot(t, y_ref, color="gray", alpha=0.7, label="Reference (y_ref)")
@@ -184,9 +223,18 @@ def _plot_signals(t, u, y, y_ref, trig, title: str):
     plt.legend(loc="upper right")
     plt.grid(True)
 
-    plt.subplot(3, 1, 3)
+    plt.subplot(4, 1, 3)
     plt.plot(t, trig, color="black", label="Trigger")
     plt.ylabel("Trigger")
+    plt.xlabel("Time (s)")
+    plt.legend(loc="upper right")
+    plt.grid(True)
+
+    plt.subplot(4, 1, 4)
+    if trig_proc is None:
+        trig_proc = np.zeros_like(trig)
+    plt.plot(t, trig_proc, color="purple", label="Trigger (processed)")
+    plt.ylabel("Trigger (proc)")
     plt.xlabel("Time (s)")
     plt.legend(loc="upper right")
     plt.grid(True)
@@ -201,7 +249,7 @@ def load_experiment(
     plot: bool = False,
     end_idx: Optional[int] = None,
     resample_factor: int = 50,
-    zoom_last_n: int = 2000,
+    zoom_last_n: int = 200,
     data_dir: Optional[str] = None,
 ) -> InputOutputData:
     """
@@ -222,9 +270,6 @@ def load_experiment(
 
     t, u, y, trig, y_filt, y_ref = _load_mat(path)
 
-    if plot:
-        _plot_signals(t, u, y, y_ref, trig, entry["filename"])
-
     ts = float(np.average(np.diff(t)))
 
     if not preprocess:
@@ -242,9 +287,18 @@ def load_experiment(
     start_idx = _find_trigger_start(trig)
 
     if end_idx is None:
-        if plot:
-            _plot_end_zoom(y, y_ref, n_last=zoom_last_n)
-        end_idx = len(u)
+        if y_ref is not None:
+            end_idx = _find_end_before_ref_zero(y_ref)
+        if end_idx is None or end_idx < 0 or end_idx <= start_idx:
+            end_idx = len(u)
+
+    # build processed trigger for clarity
+    trig_proc = np.zeros_like(trig)
+    trig_proc[start_idx:end_idx] = 1.0
+
+    if plot:
+        _plot_signals(t, u, y, y_ref, trig, trig_proc, entry["filename"])
+        _plot_zoom_windows(y, y_ref, trig_proc, start_idx, end_idx, n_samples=zoom_last_n)
 
     u = u[start_idx:end_idx]
     y = y[start_idx:end_idx]
@@ -262,6 +316,7 @@ def load_experiment(
             y_filt = y_filt[::resample_factor]
         if y_ref is not None:
             y_ref = y_ref[::resample_factor]
+        trig_proc = trig_proc[start_idx:end_idx][::resample_factor]
         ts = float(np.average(np.diff(t)))
 
     if plot:
