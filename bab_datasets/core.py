@@ -148,11 +148,13 @@ def _find_trigger_start(trig: np.ndarray) -> int:
     return int(idx[0])
 
 
-def _plot_end_zoom(y: np.ndarray, n_last: int = 2000):
+def _plot_end_zoom(y: np.ndarray, y_ref: Optional[np.ndarray], n_last: int = 2000):
     n_last = int(max(100, n_last))
     start = max(0, len(y) - n_last)
     plt.figure(figsize=(10, 4))
     plt.plot(y, color="red", label="Output (y)")
+    if y_ref is not None:
+        plt.plot(y_ref, color="gray", alpha=0.7, label="Reference (y_ref)")
     plt.xlim([start, len(y)])
     plt.title(f"Zoom on last {n_last} samples (select end index)")
     plt.xlabel("Sample")
@@ -163,7 +165,7 @@ def _plot_end_zoom(y: np.ndarray, n_last: int = 2000):
     plt.show()
 
 
-def _plot_signals(t, u, y, trig, title: str):
+def _plot_signals(t, u, y, y_ref, trig, title: str):
     plt.figure(figsize=(10, 6))
 
     plt.subplot(3, 1, 1)
@@ -175,6 +177,8 @@ def _plot_signals(t, u, y, trig, title: str):
 
     plt.subplot(3, 1, 2)
     plt.plot(t, y, color="red", label="Output (y)")
+    if y_ref is not None:
+        plt.plot(t, y_ref, color="gray", alpha=0.7, label="Reference (y_ref)")
     plt.ylabel("Output")
     plt.xlabel("Time (s)")
     plt.legend(loc="upper right")
@@ -219,7 +223,7 @@ def load_experiment(
     t, u, y, trig, y_filt, y_ref = _load_mat(path)
 
     if plot:
-        _plot_signals(t, u, y, trig, entry["filename"])
+        _plot_signals(t, u, y, y_ref, trig, entry["filename"])
 
     ts = float(np.average(np.diff(t)))
 
@@ -239,7 +243,7 @@ def load_experiment(
 
     if end_idx is None:
         if plot:
-            _plot_end_zoom(y, n_last=zoom_last_n)
+            _plot_end_zoom(y, y_ref, n_last=zoom_last_n)
         end_idx = len(u)
 
     u = u[start_idx:end_idx]
