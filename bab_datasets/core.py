@@ -251,6 +251,7 @@ def load_experiment(
     end_idx: Optional[int] = None,
     resample_factor: int = 50,
     zoom_last_n: int = 200,
+    end_ref_tolerance: float = 1e-8,
     data_dir: Optional[str] = None,
 ) -> InputOutputData:
     """
@@ -289,7 +290,7 @@ def load_experiment(
 
     if end_idx is None:
         if y_ref is not None:
-            end_idx = _find_end_before_ref_zero(y_ref)
+            end_idx = _find_end_before_ref_zero(y_ref, tolerance=end_ref_tolerance)
         if end_idx is None or end_idx < 0 or end_idx <= start_idx:
             end_idx = len(u)
 
