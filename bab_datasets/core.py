@@ -151,10 +151,11 @@ def _find_trigger_start(trig: np.ndarray) -> int:
 def _find_end_before_ref_zero(y_ref: np.ndarray) -> int:
     if y_ref is None:
         return -1
-    nz = np.where(np.abs(y_ref) > 0)[0]
-    if nz.size == 0:
-        return -1
-    return int(nz[-1] + 1)
+    # Scan from the end until we find a nonzero reference
+    for i in range(len(y_ref) - 1, -1, -1):
+        if np.abs(y_ref[i]) > 0:
+            return int(i + 1)
+    return -1
 
 
 def _plot_zoom_windows(
@@ -295,6 +296,9 @@ def load_experiment(
     # build processed trigger for clarity
     trig_proc = np.zeros_like(trig)
     trig_proc[start_idx:end_idx] = 1.0
+
+    # overwrite trigger with processed trigger for clarity downstream
+    trig = trig_proc
 
     if plot:
         _plot_signals(t, u, y, y_ref, trig, trig_proc, entry["filename"])
