@@ -63,7 +63,7 @@ See the demo notebook: [demo_bab_datasets.ipynb](demo_bab_datasets.ipynb).
 Install with video + notebook extras:
 
 ```bash
-pip install -e .[video,notebook]
+pip install "git+https://github.com/helonayala/bab_datasets.git#egg=bab_datasets[video,notebook]"
 ```
 
 Then load synced video frames:
@@ -82,8 +82,14 @@ See the demo notebook: [demo_video_sync.ipynb](demo_video_sync.ipynb).
 
 ### Sync Preview (GIF)
 
-![Sync preview (middle)](figures/sync_preview_middle.gif)
+The GIFs below were generated from the synced outputs in `demo_video_sync.ipynb` using the `swept_sine` dataset. Each preview overlays the video with the corresponding proprioceptive signals for a 5‑second window.
+
 ![Sync preview (start)](figures/sync_preview_start.gif)
+
+And the following is the same, but using a different start time (at 20 seconds).
+
+![Sync preview (middle)](figures/sync_preview_middle.gif)
+
 
 ## Notes
 
@@ -109,14 +115,12 @@ sync = nod.sync_video_with_dataset(
     video_name="swept_sine",
     dataset_name="swept_sine",
     video_dir="/absolute/path/to/videos_BAB",
-    roi="lower_left",
-    roi_frac=0.25,
 )
 
 print(sync.frame_start, sync.sample_start)
 ```
 
-The sync uses the LED onset in the lower-left quadrant and aligns it with the trigger in the dataset.
+The sync uses manually annotated LED‑on frames (stored in the package) and aligns video time to the trigger (t=0).
 
 Angle extraction and modeling are intended to live in a separate `hybrid_sysid` project (to be linked once published).
 
@@ -126,10 +130,10 @@ See `demo_video_sync.ipynb` for a quick sync walkthrough.
 
 Short descriptions and naming rationale:
 
-- **rampa_positiva / rampa_negativa**: Semi‑static ramp tests with monotonic reference changes (positive or negative).
+- **rampa_positiva / rampa_negativa**: Semi‑static ramp tests (slow, monotonic reference changes) in positive or negative directions.
 - **random_steps_01..04**: Random step reference sequences for beam position, with increasing step rates across runs.
-- **swept_sine**: Broadband swept‑sine excitation for system identification.
-- **multisine_05 / multisine_06**: Broadband multisine excitation, repeated twice with different random phases.
+- **swept_sine**: Broadband swept‑sine excitation.
+- **multisine_05 / multisine_06**: Broadband multisine excitation, repeated twice with different random phases. The frequency range is the same as the swept‑sine.
 
 - 01_rampa_positiva.mat  -> `rampa_positiva`
 - 02_rampa_negativa.mat  -> `rampa_negativa`
@@ -140,3 +144,5 @@ Short descriptions and naming rationale:
 - 04_swept_sine.mat      -> `swept_sine`
 - 05_multisine_01.mat    -> `multisine_05`
 - 06_multisine_02.mat    -> `multisine_06`
+
+Note: Some filenames are in Portuguese; the descriptions above map them to clear English meanings.
