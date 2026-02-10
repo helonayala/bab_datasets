@@ -1,24 +1,6 @@
 # bab_datasets
 
-Lightweight dataset loader utilities for nonlinear system ID experiments.
-
-## Install (local)
-
-```bash
-pip install -e .
-```
-
-## Install with video support
-
-```bash
-pip install -e .[video]
-```
-
-## Install with video + notebook support
-
-```bash
-pip install -e .[video,notebook]
-```
+Lightweight loaders for the ball-and-beam (BAB) system ID dataset, including proprioceptive signals, synced video, and alignment utilities.
 
 ## Install (from GitHub)
 
@@ -65,12 +47,6 @@ print(train_val[:100])
 
 ### 1) Proprioceptive data only
 
-Install core dependencies:
-
-```bash
-pip install -e .
-```
-
 Then load a dataset:
 
 ```python
@@ -80,7 +56,7 @@ data = nod.load_experiment("swept_sine", preprocess=True)
 t = data.time_vector()
 ```
 
-See the demo notebook: `demo_bab_datasets.ipynb`.
+See the demo notebook: [demo_bab_datasets.ipynb](demo_bab_datasets.ipynb).
 
 ### 2) Proprioceptive + video (synced)
 
@@ -102,11 +78,12 @@ video_t, frames, sync = nod.load_synced_video_frames(
 )
 ```
 
-See the demo notebook: `demo_video_sync.ipynb`.
+See the demo notebook: [demo_video_sync.ipynb](demo_video_sync.ipynb).
 
 ### Sync Preview (GIF)
 
-![Sync preview](figures/sync_preview.gif)
+![Sync preview (middle)](figures/sync_preview_middle.gif)
+![Sync preview (start)](figures/sync_preview_start.gif)
 
 ## Notes
 
@@ -121,9 +98,7 @@ See the demo notebook: `demo_video_sync.ipynb`.
 
 The video utilities are optional and do not affect the core dataset API. They require OpenCV.
 
-```bash
-pip install opencv-python
-```
+Install with the `video` extra to include OpenCV (and other video dependencies).
 
 Set `BAB_DATASETS_VIDEO_DIR` to the folder that contains the `.MOV` files, or pass `video_dir` explicitly.
 
@@ -148,6 +123,13 @@ Angle extraction and modeling are intended to live in a separate `hybrid_sysid` 
 See `demo_video_sync.ipynb` for a quick sync walkthrough.
 
 ## Datasets
+
+Short descriptions and naming rationale:
+
+- **rampa_positiva / rampa_negativa**: Semi‑static ramp tests with monotonic reference changes (positive or negative).
+- **random_steps_01..04**: Random step reference sequences for beam position, with increasing step rates across runs.
+- **swept_sine**: Broadband swept‑sine excitation for system identification.
+- **multisine_05 / multisine_06**: Broadband multisine excitation, repeated twice with different random phases.
 
 - 01_rampa_positiva.mat  -> `rampa_positiva`
 - 02_rampa_negativa.mat  -> `rampa_negativa`
