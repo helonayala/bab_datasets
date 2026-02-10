@@ -82,7 +82,7 @@ See the demo notebook: [demo_video_sync.ipynb](demo_video_sync.ipynb).
 
 ### Sync Preview (GIF)
 
-The GIFs below were generated from the synced outputs in `demo_video_sync.ipynb` using the `swept_sine` dataset. Each preview overlays the video with the corresponding proprioceptive signals for a 5‑second window.
+The GIFs below were generated from the synced outputs in `demo_video_sync.ipynb` using the `swept_sine` dataset. Each preview overlays the video with the corresponding proprioceptive signals for a 20‑second window.
 
 ![Sync preview (start)](figures/sync_preview_start.gif)
 
@@ -134,6 +134,8 @@ Short descriptions and naming rationale:
 - **random_steps_01..04**: Random step reference sequences for beam position, with increasing step rates across runs.
 - **swept_sine**: Broadband swept‑sine excitation.
 - **multisine_05 / multisine_06**: Broadband multisine excitation, repeated twice with different random phases. The frequency range is the same as the swept‑sine.
+
+Naming conventions for the .mat files (proprioceptive data) and the strings to be used in the code for loading data:
 
 - 01_rampa_positiva.mat  -> `rampa_positiva`
 - 02_rampa_negativa.mat  -> `rampa_negativa`
