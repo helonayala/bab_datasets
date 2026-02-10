@@ -12,13 +12,13 @@ To install with extras from GitHub:
 
 ```bash
 # proprioceptive only (core)
-pip install "git+https://github.com/helonayala/bab_datasets.git"
+pip install "bab_datasets @ git+https://github.com/helonayala/bab_datasets.git"
 
 # core + video support
-pip install "git+https://github.com/helonayala/bab_datasets.git#egg=bab_datasets[video]"
+pip install "bab_datasets[video] @ git+https://github.com/helonayala/bab_datasets.git"
 
 # core + video + notebook
-pip install "git+https://github.com/helonayala/bab_datasets.git#egg=bab_datasets[video,notebook]"
+pip install "bab_datasets[video,notebook] @ git+https://github.com/helonayala/bab_datasets.git"
 ```
 
 ## Usage
