@@ -8,10 +8,35 @@ Lightweight dataset loader utilities for nonlinear system ID experiments.
 pip install -e .
 ```
 
+## Install with video support
+
+```bash
+pip install -e .[video]
+```
+
+## Install with video + notebook support
+
+```bash
+pip install -e .[video,notebook]
+```
+
 ## Install (from GitHub)
 
 ```bash
 pip install git+https://github.com/helonayala/bab_datasets.git
+```
+
+To install with extras from GitHub:
+
+```bash
+# proprioceptive only (core)
+pip install "git+https://github.com/helonayala/bab_datasets.git"
+
+# core + video support
+pip install "git+https://github.com/helonayala/bab_datasets.git#egg=bab_datasets[video]"
+
+# core + video + notebook
+pip install "git+https://github.com/helonayala/bab_datasets.git#egg=bab_datasets[video,notebook]"
 ```
 
 ## Usage
@@ -44,6 +69,36 @@ print(train_val[:100])
 - For manual trimming, use `plot=True` and set `end_idx` after visually checking the zoomed plots.
 - You can change the zoom window size with `zoom_last_n` (default: 200).
 - If present, `ref` is exposed as `data.y_ref` and `yf` is exposed as `data.y_filt` (not used for modeling by default).
+
+## Video Add-on (Optional)
+
+The video utilities are optional and do not affect the core dataset API. They require OpenCV.
+
+```bash
+pip install opencv-python
+```
+
+Set `BAB_DATASETS_VIDEO_DIR` to the folder that contains the `.MOV` files, or pass `video_dir` explicitly.
+
+```python
+import bab_datasets as nod
+
+sync = nod.sync_video_with_dataset(
+    video_name="swept_sine",
+    dataset_name="swept_sine",
+    video_dir="/absolute/path/to/videos_BAB",
+    roi="lower_left",
+    roi_frac=0.25,
+)
+
+print(sync.frame_start, sync.sample_start)
+```
+
+The sync uses the LED onset in the lower-left quadrant and aligns it with the trigger in the dataset.
+
+Angle extraction and modeling are intended to live in a separate `hybrid_sysid` project (to be linked once published).
+
+See `demo_video_sync.ipynb` for a quick sync walkthrough.
 
 ## Datasets
 

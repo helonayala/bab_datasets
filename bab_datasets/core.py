@@ -96,13 +96,16 @@ class InputOutputData:
     def __repr__(self) -> str:
         base = (
             f"InputOutputData \"{self.name}\" u.shape={self.u.shape} y.shape={self.y.shape}\n"
-            f"sampling_time={self.sampling_time:.6e}"
+            f"sampling_time={self.sampling_time:.4f}"
         )
         if self.y_ref is not None:
             base += f" y_ref.shape={self.y_ref.shape}"
         if self.state_initialization_window_length is not None:
             base += f" state_initialization_window_length={self.state_initialization_window_length}"
         return base
+
+    def time_vector(self) -> np.ndarray:
+        return np.arange(len(self.y)) * float(self.sampling_time)
 
 
 def list_experiments():
@@ -285,6 +288,10 @@ def _estimate_y_dot(
     raise ValueError(f"Unknown y_dot method '{method}'.")
 
 
+def _round_ts(ts: float, decimals: int = 4) -> float:
+    return float(np.round(ts, int(decimals)))
+
+
 def load_experiment(
     name: str,
     preprocess: bool = True,
@@ -324,7 +331,7 @@ def load_experiment(
     y_ref_full = y_ref
     trig_full = trig
 
-    ts = float(np.average(np.diff(t)))
+    ts = _round_ts(float(np.average(np.diff(t))))
     y_dot_full = _estimate_y_dot(
         y_full,
         ts,
@@ -392,7 +399,7 @@ def load_experiment(
         if y_ref is not None:
             y_ref = y_ref[::resample_factor]
         trig_proc = trig_proc[start_idx:end_idx][::resample_factor]
-        ts = float(np.average(np.diff(t)))
+        ts = _round_ts(float(np.average(np.diff(t))))
 
     y_dot = _estimate_y_dot(
         y,
