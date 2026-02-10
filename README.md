@@ -61,6 +61,53 @@ print(train_val)
 print(train_val[:100])
 ```
 
+## Usage Examples
+
+### 1) Proprioceptive data only
+
+Install core dependencies:
+
+```bash
+pip install -e .
+```
+
+Then load a dataset:
+
+```python
+import bab_datasets as nod
+
+data = nod.load_experiment("swept_sine", preprocess=True)
+t = data.time_vector()
+```
+
+See the demo notebook: `demo_bab_datasets.ipynb`.
+
+### 2) Proprioceptive + video (synced)
+
+Install with video + notebook extras:
+
+```bash
+pip install -e .[video,notebook]
+```
+
+Then load synced video frames:
+
+```python
+import bab_datasets as nod
+
+data = nod.load_experiment("swept_sine", preprocess=True)
+video_t, frames, sync = nod.load_synced_video_frames(
+    video_name="swept_sine",
+    data=data,
+)
+```
+
+See the demo notebook: `demo_video_sync.ipynb`.
+
+### Sync Preview (GIF)
+
+![Sync preview](figures/sync_preview.gif)
+
 ## Notes
 
 - The loader prefers local files under `data/` in this repo.
